@@ -1,0 +1,37 @@
+gs = import gamescene
+
+LENGTH = 8
+SPOIL_SEQUENCE = false
+
+SEQUENCE = [$.random([true,false]) for i in 0..LENGTH]
+if SPOIL_SEQUENCE { $.print(SEQUENCE) }
+
+current_index = counter(bits = LENGTH.log(2).ceil())
+
+wrong = !{
+    wait()
+    current_index = 0
+    @log::runtime::flash(hex("#FF0000"))
+}
+
+correct = !{
+    wait()
+    current_index++
+    if current_index >= LENGTH {
+        @log::runtime::flash(hex("#00FF00"))
+    }
+}
+
+input = (value: @bool) {
+    return !{
+        index = current_index.to_const(0..LENGTH)
+        if SEQUENCE[index] == value {
+            correct!
+        } else {
+            wrong!
+        }
+    }
+}
+
+on(gs.button_a(), input(false))
+on(gs.button_b(), input(true))
