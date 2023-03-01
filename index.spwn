@@ -1,24 +1,51 @@
+extract obj_props
+
 gs = import gamescene
 
 LENGTH = 8
 SPOIL_SEQUENCE = false
 
+SEQUENCE_INDICATORS = [?g for i in 0..LENGTH]
 SEQUENCE = [$.random([true,false]) for i in 0..LENGTH]
 if SPOIL_SEQUENCE { $.print(SEQUENCE) }
+
+for i in 0..LENGTH {
+    $.add(obj {
+        OBJ_ID: 1,
+        X: 150 + i * 30,
+        Y: 150,
+        GROUPS: SEQUENCE_INDICATORS[i],
+    })
+    @log::runtime::flash(hex("#555555"))
+    -> SEQUENCE_INDICATORS[i].alpha(0, 0.5)
+}
 
 current_index = counter(bits = LENGTH.log(2).ceil())
 
 wrong = !{
     wait()
+    for i in 0..LENGTH {
+        -> SEQUENCE_INDICATORS[i].alpha(0, (i+1) * 0.1)
+    }
     current_index = 0
     @log::runtime::flash(hex("#FF0000"))
 }
 
 correct = !{
     wait()
-    current_index++
-    if current_index >= LENGTH {
-        @log::runtime::flash(hex("#00FF00"))
+    match current_index {
+        <LENGTH: () {
+            -> SEQUENCE_INDICATORS[current_index.to_const(0..LENGTH)].alpha(1, 0.2)
+            current_index++
+        } (),
+        ==LENGTH: () {
+            current_index++
+            SEQUENCE_INDICATORS[LENGTH-1].alpha(1, 0.2)
+            for i in (0..LENGTH).reverse() {
+                -> SEQUENCE_INDICATORS[i].alpha(0, (8-i) * 0.1)
+            }
+            @log::runtime::flash(hex("#00FF00"))
+        } (),
     }
 }
 
